@@ -4,10 +4,6 @@
     "displayName": "Page Management System",
     "description": "Page Management System.",
     "unity": "2019.1",
-    // "dependencies": {
-    //     // "com.unity.some-package": "1.0.0",
-    //     // "com.unity.other-package": "2.0.0"
-    // },
     "keywords": [
         "keyword1",
         "keyword2",
