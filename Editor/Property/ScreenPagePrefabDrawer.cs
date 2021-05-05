@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
-namespace com.Gamu2059.PageManagement {
+namespace com.Gamu2059.PageManagement.Editor.Property {
     [CustomPropertyDrawer(typeof(ScreenPagePrefab))]
     public class ScreenPagePrefabDrawer : PropertyDrawer {
         private int index;

@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace com.Gamu2059.PageManagement {
+namespace com.Gamu2059.PageManagement.Editor.Property {
     /// <summary>
     /// SceneをInspectorで描画するためのクラス
     /// https://gist.github.com/Hertzole/ac269f3148bc5192cc2eb6d472870d24

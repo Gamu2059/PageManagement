@@ -1,0 +1,11 @@
+﻿using UnityEngine;
+using com.Gamu2059.PageManagement;
+using SCENE_NAME_SPACE;
+using WINDOW_NAME_SPACE;
+using SCREEN_NAME_SPACE;
+
+namespace CLASS_NAME_SPACE {
+    [CreateAssetMenu(fileName = "page_binder.asset", menuName = "PageManagement/CLASS_NAME", order = 0)]
+    public class CLASS_NAME : PageBinder<SCENE_TYPE, WINDOW_TYPE, SCREEN_TYPE> {
+    }
+}
