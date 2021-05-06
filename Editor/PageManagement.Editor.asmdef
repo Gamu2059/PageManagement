@@ -2,7 +2,7 @@
     "name": "PageManagement.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:8efb54a32fc1b374d873b1acadfd691a"
+        "PageManagement"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
