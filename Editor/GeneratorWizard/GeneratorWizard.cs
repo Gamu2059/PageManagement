@@ -137,7 +137,7 @@ namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
             var screenNameProp = screenProp.FindPropertyRelative("name");
 
             var assetsPath = "Assets";
-            var packagePath = "Packages";
+            var packagePath = "Packages/com.gamu2059.page-management";
             
             var assetsTemplate = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.Combine(assetsPath, templatePath));
             var packageTemplate = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.Combine(packagePath, templatePath));
