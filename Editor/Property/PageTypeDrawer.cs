@@ -8,12 +8,12 @@ using UnityEngine;
 namespace com.Gamu2059.PageManagement.Editor.Property {
     [CustomPropertyDrawer(typeof(PageTypeAttribute))]
     public class PageTypeDrawer : PropertyDrawer {
-        private int index;
         private Type[] cachedCandidateType;
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             var foundTypeProp = property.FindPropertyRelative("foundType");
-            
+            var indexProp = property.FindPropertyRelative("index");
+
             var attr = attribute as PageTypeAttribute;
             var types = GetType(attr.PageType);
             if (types == null || !types.Any()) {
@@ -32,6 +32,7 @@ namespace com.Gamu2059.PageManagement.Editor.Property {
             }
 
             var options = types.Select(t => $"{t.Name} - {t.Namespace}.{t.Name}").ToArray();
+            var index = indexProp.intValue;
             index = EditorGUI.Popup(position, label.text, index, options);
             if (index >= 0 || index < types.Length) {
                 var type = types[index];
@@ -40,6 +41,7 @@ namespace com.Gamu2059.PageManagement.Editor.Property {
                 nameSpaceProp.stringValue = type.Namespace;
                 nameProp.stringValue = type.Name;
                 foundTypeProp.boolValue = true;
+                indexProp.intValue = index;
             }
         }
 

@@ -19,8 +19,11 @@ namespace com.Gamu2059.PageManagement.Editor.Property {
 
         public bool FoundType => foundType;
 
+        [SerializeField]
+        private int index;
+        
         public Type CreateType() {
-            return Type.GetType($"{nameSpace} {name}");
+            return Type.GetType($"{nameSpace}.{name}");
         }
     }
 }
