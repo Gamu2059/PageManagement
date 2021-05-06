@@ -1,7 +1,7 @@
 {
     "name": "com.gamu2059.page-management",
     "version": "0.0.1",
-    "displayName": "Page Management System",
+    "displayName": "PageManagement",
     "description": "Page Management System.",
     "unity": "2019.1",
     "license": "MIT",

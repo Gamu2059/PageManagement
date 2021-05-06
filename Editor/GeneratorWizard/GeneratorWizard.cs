@@ -123,8 +123,8 @@ namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
         }
 
         public void OnWizardCreate() {
-            CreateClass("Assets/PageManagement/Editor/GeneratorWizard/PageManagerTemplate.txt", pageManagerData);
-            CreateClass("Assets/PageManagement/Editor/GeneratorWizard/PageBinderTemplate.txt", pageBinderData);
+            CreateClass("PageManagement/Editor/GeneratorWizard/PageManagerTemplate.txt", pageManagerData);
+            CreateClass("PageManagement/Editor/GeneratorWizard/PageBinderTemplate.txt", pageBinderData);
             AssetDatabase.Refresh();
         }
 
@@ -136,8 +136,17 @@ namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
             var windowNameProp = windowProp.FindPropertyRelative("name");
             var screenNameProp = screenProp.FindPropertyRelative("name");
 
-            var template = AssetDatabase.LoadAssetAtPath<TextAsset>(templatePath);
-
+            var assetsPath = "Assets";
+            var packagePath = "Packages";
+            
+            var assetsTemplate = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.Combine(assetsPath, templatePath));
+            var packageTemplate = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.Combine(packagePath, templatePath));
+            var template = assetsTemplate != null ? assetsTemplate : packageTemplate;
+            if (template == null) {
+                Debug.LogError($"テンプレートファイルの読み込みに失敗しました。\nPath : {templatePath}");
+                return;
+            }
+            
             var nameSpace = data.NameSpace;
             if (string.IsNullOrEmpty(nameSpace)) {
                 nameSpace = Application.companyName;
