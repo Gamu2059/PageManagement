@@ -123,8 +123,8 @@ namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
         }
 
         public void OnWizardCreate() {
-            CreateClass("PageManagement/Editor/GeneratorWizard/PageManagerTemplate.txt", pageManagerData);
-            CreateClass("PageManagement/Editor/GeneratorWizard/PageBinderTemplate.txt", pageBinderData);
+            CreateClass("Editor/GeneratorWizard/PageManagerTemplate.txt", pageManagerData);
+            CreateClass("Editor/GeneratorWizard/PageBinderTemplate.txt", pageBinderData);
             AssetDatabase.Refresh();
         }
 
@@ -136,7 +136,7 @@ namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
             var windowNameProp = windowProp.FindPropertyRelative("name");
             var screenNameProp = screenProp.FindPropertyRelative("name");
 
-            var assetsPath = "Assets";
+            var assetsPath = "Assets/PageManagement";
             var packagePath = "Packages/com.gamu2059.page-management";
             
             var assetsTemplate = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.Combine(assetsPath, templatePath));
