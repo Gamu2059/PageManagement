@@ -1,0 +1,9 @@
+﻿using com.Gamu2059.PageManagement;
+using SCENE_NAME_SPACE;
+using WINDOW_NAME_SPACE;
+using SCREEN_NAME_SPACE;
+
+namespace CLASS_NAME_SPACE {
+    public class CLASS_NAME : PageManager<SCENE_TYPE, WINDOW_TYPE, SCREEN_TYPE> {
+    }
+}
