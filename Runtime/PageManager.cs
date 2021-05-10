@@ -14,8 +14,11 @@ using UnityEditor;
 #endif
 
 namespace com.Gamu2059.PageManagement {
-    public class PageManager<TScene, TWindow, TScreen> : ICancellationTokenCreatable
-        where TScene : Enum where TWindow : Enum where TScreen : Enum {
+    public class PageManager<T, TScene, TWindow, TScreen> : ICancellationTokenCreatable
+        where T : PageManager<T, TScene, TWindow, TScreen>, new()
+        where TScene : Enum
+        where TWindow : Enum
+        where TScreen : Enum {
         #region Define
 
         private class SceneParamSet {
@@ -29,9 +32,9 @@ namespace com.Gamu2059.PageManagement {
 
         #endregion
 
-        private static PageManager<TScene, TWindow, TScreen> instance;
+        private static T instance;
 
-        public static PageManager<TScene, TWindow, TScreen> Instance {
+        public static T Instance {
             get {
                 if (instance == null) {
                     SetUp();
@@ -63,7 +66,7 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            instance = new PageManager<TScene, TWindow, TScreen>();
+            instance = new T();
         }
 
         protected PageManager() {
