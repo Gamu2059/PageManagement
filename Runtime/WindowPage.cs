@@ -77,7 +77,7 @@ namespace com.Gamu2059.PageManagement {
             isBusy = false;
 
             windowCts = windowCts.Rebuild(sceneCt, this.GetCancellationTokenOnDestroy());
-            await OnSetUpMoveInAsync(windowPageParam, ct);
+            await OnSetUpForwardInAsync(windowPageParam, ct);
 
             CurrentScreenPage = Instantiate(screenPagePrefab, screenRoot);
             CurrentScreenPage.SetWindowCt(GetCt());
@@ -104,7 +104,7 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
             windowCts = windowCts.Rebuild(sceneCt, this.GetCancellationTokenOnDestroy());
-            await OnSetUpBackInAsync(null, ct);
+            await OnSetUpForwardInAsync(null, ct);
 
             CurrentScreenPage = GetComponentInChildren<ScreenPage>();
             if (CurrentScreenPage != null) {
@@ -195,7 +195,7 @@ namespace com.Gamu2059.PageManagement {
         /// <summary>
         /// 進み遷移での初期化処理。拡張用。
         /// </summary>
-        protected virtual UniTask OnSetUpMoveInAsync(IWindowPageParam windowPageParam, CancellationToken ct) {
+        protected virtual UniTask OnSetUpForwardInAsync(IWindowPageParam windowPageParam, CancellationToken ct) {
             return UniTask.CompletedTask;
         }
 
