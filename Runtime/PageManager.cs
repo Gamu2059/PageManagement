@@ -5,6 +5,7 @@ using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
 using com.Gamu2059.PageManagement.Utility;
 using Cysharp.Threading.Tasks;
+using UniRx;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
@@ -52,7 +53,18 @@ namespace com.Gamu2059.PageManagement {
 
         protected ScenePage CurrentScenePage { get; private set; }
 
+        private ISwitchSceneEvent switchSceneEvent;
+        
         private IDisposable setUpOnDefaultDisposable;
+
+        private Subject<Unit> beginSceneLoadObservable;
+        public IObservable<Unit> BeginSceneLoadObservable => beginSceneLoadObservable;
+
+        private Subject<Unit> completeSceneLoadObservable;
+        public IObservable<Unit> CompleteSceneLoadObservable => completeSceneLoadObservable;
+
+        private Subject<Unit> cancelSceneLoadObservable;
+        public IObservable<Unit> CancelSceneLoadObservable => cancelSceneLoadObservable;
 
         #region SetUp & Dispose PageManager
 
@@ -76,11 +88,19 @@ namespace com.Gamu2059.PageManagement {
             isBusy = false;
             CurrentScenePage = null;
 
+            beginSceneLoadObservable = new Subject<Unit>();
+            completeSceneLoadObservable = new Subject<Unit>();
+            cancelSceneLoadObservable = new Subject<Unit>();
+
             SetUpPageFinder();
             SetUpOnDefaultScene();
         }
 
         private void Dispose() {
+            cancelSceneLoadObservable?.Dispose();
+            completeSceneLoadObservable?.Dispose();
+            beginSceneLoadObservable?.Dispose();
+
             pageManagerCts?.Cancel();
             pageManagerCts?.Dispose();
             pageManagerCts = null;
@@ -151,23 +171,29 @@ namespace com.Gamu2059.PageManagement {
         /// <param name="scenePageParam">遷移先のシーンに渡すパラメータ</param>
         /// <param name="windowPageParam">遷移先のウィンドウに渡すパラメータ</param>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
+        /// <param name="switchScene">シーン切り替え演出処理</param>
         public async UniTask SwitchSceneAsync(
             TScene sceneType,
             TWindow windowType,
             TScreen screenType,
             IScenePageParam scenePageParam,
             IWindowPageParam windowPageParam,
-            IScreenPageParam screenPageParam) {
+            IScreenPageParam screenPageParam,
+            ISwitchSceneEvent switchScene = null) {
             // もしシーン遷移中にシーン遷移リクエストが割り込んできたら、今の遷移処理をキャンセルして最新のリクエストを処理する
             if (isBusy) {
                 switchSceneCts.CancelAndDispose();
+                cancelSceneLoadObservable?.OnNext(Unit.Default);
+                switchSceneEvent?.Cancel();
             }
 
             isBusy = true;
 
+            switchSceneEvent = switchScene;
             switchSceneCts = this.CreateCts();
             await ProcessSwitchSceneAsync(sceneType, windowType, screenType,
                 scenePageParam, windowPageParam, screenPageParam, switchSceneCts.Token);
+            switchSceneEvent = null;
 
             switchSceneCts.CancelAndDispose();
 
@@ -207,6 +233,11 @@ namespace com.Gamu2059.PageManagement {
 
             await PageTransitionUtility.PlaySequenceAsync(null, CurrentScenePage, ct);
 
+            beginSceneLoadObservable?.OnNext(Unit.Default);
+            if (switchSceneEvent != null) {
+                await switchSceneEvent.WaitShowEvent();
+            }
+            
             if (CurrentScenePage != null) {
                 CurrentScenePage.DeactivateObject();
                 await CurrentScenePage.CleanUpAsync(ct);
@@ -232,6 +263,11 @@ namespace com.Gamu2059.PageManagement {
             SceneManager.SetActiveScene(loadScene);
             nextScene.ActivateObject();
 
+            completeSceneLoadObservable?.OnNext(Unit.Default);
+            if (switchSceneEvent != null) {
+                await switchSceneEvent.WaitHideEvent();
+            }
+            
             await PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct);
 
             CurrentScenePage = nextScene;
