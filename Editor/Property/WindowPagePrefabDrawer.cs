@@ -6,8 +6,6 @@ using UnityEngine;
 namespace com.Gamu2059.PageManagement.Editor.Property {
     [CustomPropertyDrawer(typeof(WindowPagePrefab))]
     public class WindowPagePrefabDrawer : PropertyDrawer {
-        private int index;
-
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             var prefabs = GetWindowPrefabs();
             var options = prefabs.Select(s => $"{s.Item1.name} - \"{s.Item2.Replace("/", "\\")}\"")
@@ -21,11 +19,14 @@ namespace com.Gamu2059.PageManagement.Editor.Property {
                 return;
             }
 
+            var indexProp = property.FindPropertyRelative("index");
+            var index = indexProp.intValue;
             index = EditorGUI.Popup(position, label.text, index, options);
             if (index >= 0 || index < prefabs.Count) {
                 var script = prefabs[index];
                 var scriptProp = property.FindPropertyRelative("prefab");
                 scriptProp.objectReferenceValue = script.Item1;
+                indexProp.intValue = index;
             }
         }
 
