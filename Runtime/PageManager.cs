@@ -235,7 +235,7 @@ namespace com.Gamu2059.PageManagement {
 
             beginSceneLoadObservable?.OnNext(Unit.Default);
             if (switchSceneEvent != null) {
-                await switchSceneEvent.WaitShowEvent();
+                await switchSceneEvent.WaitShowEvent(ct);
             }
             
             if (CurrentScenePage != null) {
@@ -265,7 +265,7 @@ namespace com.Gamu2059.PageManagement {
 
             completeSceneLoadObservable?.OnNext(Unit.Default);
             if (switchSceneEvent != null) {
-                await switchSceneEvent.WaitHideEvent();
+                await switchSceneEvent.WaitHideEvent(ct);
             }
             
             await PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct);
