@@ -77,6 +77,8 @@ namespace com.Gamu2059.PageManagement {
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam,
             CancellationToken ct) {
+            isReservableRequest = false;
+            
             requests = new Queue<PageRequest>();
             screens = new Stack<ScreenPage>();
             isBusy = false;

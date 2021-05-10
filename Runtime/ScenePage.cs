@@ -70,10 +70,6 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         public void SetReservableRequest(bool reservableRequest) {
             isReservableRequest = reservableRequest;
-
-            if (CurrentWindowPage != null) {
-                CurrentWindowPage.SetReservableRequest(reservableRequest);
-            }
         }
 
         /// <summary>
@@ -93,6 +89,8 @@ namespace com.Gamu2059.PageManagement {
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam,
             CancellationToken ct) {
+            isReservableRequest = false;
+            
             requests = new Queue<PageRequest>();
             windows = new Stack<WindowPage>();
             isBusy = false;
@@ -367,6 +365,7 @@ namespace com.Gamu2059.PageManagement {
 
             windows.Push(CurrentWindowPage);
             CurrentWindowPage = nextWindow;
+            CurrentWindowPage.SetReservableRequest(true);
         }
 
         /// <summary>

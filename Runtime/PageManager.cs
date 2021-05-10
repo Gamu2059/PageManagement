@@ -48,7 +48,7 @@ namespace com.Gamu2059.PageManagement {
         private bool isBusy;
         private CancellationTokenSource switchSceneCts;
 
-        private ScenePage currentScenePage;
+        protected ScenePage CurrentScenePage { get; private set; }
 
         private IDisposable setUpOnDefaultDisposable;
 
@@ -72,7 +72,7 @@ namespace com.Gamu2059.PageManagement {
             pageManagerCts = new CancellationTokenSource();
 
             isBusy = false;
-            currentScenePage = null;
+            CurrentScenePage = null;
 
             SetUpPageFinder();
             SetUpOnDefaultScene();
@@ -122,7 +122,7 @@ namespace com.Gamu2059.PageManagement {
             var scene = SceneManager.GetActiveScene();
             var scenePage = FindScenePage(scene);
             if (scenePage != null) {
-                currentScenePage = scenePage;
+                CurrentScenePage = scenePage;
                 scenePage.SetUpOnDefaultAsync(GetCt()).Forget();
             }
         }
@@ -209,8 +209,8 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            if (currentScenePage != null) {
-                await currentScenePage.DeactivateAsync(ct);
+            if (CurrentScenePage != null) {
+                await CurrentScenePage.DeactivateAsync(ct);
             }
 
             // シーン遷移用のctではなく、親階層のctを渡す
@@ -223,11 +223,11 @@ namespace com.Gamu2059.PageManagement {
             SceneManager.SetActiveScene(loadScene);
             nextScene.ActivateObject();
 
-            await PageTransitionUtility.PlaySequenceAsync(nextScene, currentScenePage, ct);
+            await PageTransitionUtility.PlaySequenceAsync(nextScene, CurrentScenePage, ct);
 
-            if (currentScenePage != null) {
-                currentScenePage.DeactivateObject();
-                await currentScenePage.CleanUpAsync(ct);
+            if (CurrentScenePage != null) {
+                CurrentScenePage.DeactivateObject();
+                await CurrentScenePage.CleanUpAsync(ct);
             }
 
             // 必要なシーン以外を破棄する
@@ -235,7 +235,8 @@ namespace com.Gamu2059.PageManagement {
             needSceneList.AddRange(nextScene.GetAdditiveScenes());
             await UnloadAllScenes(ct, needSceneList.ToArray());
 
-            currentScenePage = nextScene;
+            CurrentScenePage = nextScene;
+            CurrentScenePage.SetReservableRequest(true);
         }
 
         /// <summary>
@@ -264,7 +265,7 @@ namespace com.Gamu2059.PageManagement {
             TScreen screenType,
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam) {
-            if (currentScenePage == null) {
+            if (CurrentScenePage == null) {
                 return;
             }
 
@@ -283,7 +284,7 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            await currentScenePage.ForwardWindowAsync(
+            await CurrentScenePage.ForwardWindowAsync(
                 windowPagePrefab, screenPagePrefab, windowPageParam, screenPageParam);
         }
 
@@ -299,7 +300,7 @@ namespace com.Gamu2059.PageManagement {
             TScreen screenType,
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam) {
-            if (currentScenePage == null) {
+            if (CurrentScenePage == null) {
                 return;
             }
 
@@ -318,7 +319,7 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            await currentScenePage.SwitchWindowAsync(
+            await CurrentScenePage.SwitchWindowAsync(
                 windowPagePrefab, screenPagePrefab, windowPageParam, screenPageParam);
         }
 
@@ -328,8 +329,8 @@ namespace com.Gamu2059.PageManagement {
         /// <param name="windowPageParam">遷移先のウィンドウに渡すパラメータ</param>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
         public async UniTask BackWindowAsync(IWindowPageParam windowPageParam, IScreenPageParam screenPageParam) {
-            if (currentScenePage != null) {
-                await currentScenePage.BackWindowAsync(windowPageParam, screenPageParam);
+            if (CurrentScenePage != null) {
+                await CurrentScenePage.BackWindowAsync(windowPageParam, screenPageParam);
             }
         }
 
@@ -339,7 +340,7 @@ namespace com.Gamu2059.PageManagement {
         /// <param name="screenType">遷移先のスクリーン</param>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
         public async UniTask ForwardScreenAsync(TScreen screenType, IScreenPageParam screenPageParam) {
-            if (currentScenePage == null) {
+            if (CurrentScenePage == null) {
                 return;
             }
 
@@ -357,7 +358,7 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            await currentScenePage.ForwardScreenAsync(screenPagePrefab, screenPageParam);
+            await CurrentScenePage.ForwardScreenAsync(screenPagePrefab, screenPageParam);
         }
 
         /// <summary>
@@ -366,7 +367,7 @@ namespace com.Gamu2059.PageManagement {
         /// <param name="screenType">遷移先のスクリーン</param>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
         public async UniTask SwitchScreenAsync(TScreen screenType, IScreenPageParam screenPageParam) {
-            if (currentScenePage == null) {
+            if (CurrentScenePage == null) {
                 return;
             }
 
@@ -384,7 +385,7 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            await currentScenePage.SwitchScreenAsync(screenPagePrefab, screenPageParam);
+            await CurrentScenePage.SwitchScreenAsync(screenPagePrefab, screenPageParam);
         }
 
         /// <summary>
@@ -392,8 +393,8 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
         public async UniTask BackScreenAsync(IScreenPageParam screenPageParam) {
-            if (currentScenePage != null) {
-                await currentScenePage.BackScreenAsync(screenPageParam);
+            if (CurrentScenePage != null) {
+                await CurrentScenePage.BackScreenAsync(screenPageParam);
             }
         }
 
