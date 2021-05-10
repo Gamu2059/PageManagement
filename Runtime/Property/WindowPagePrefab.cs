@@ -9,6 +9,9 @@ namespace com.Gamu2059.PageManagement {
 
         public WindowPage Prefab => prefab;
 
+        [SerializeField]
+        private int index;
+
         public static implicit operator WindowPagePrefab(WindowPage prefab) {
             return new WindowPagePrefab {prefab = prefab};
         }
