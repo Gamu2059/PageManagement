@@ -118,13 +118,13 @@ namespace com.Gamu2059.PageManagement {
         }
 
         private void SetUpOnDefaultScene() {
-            setUpOnDefaultDisposable = PageManagerHelper.Instance.SetUpOnDefaultSceneObservable
-                .Subscribe(scenePage => {
-                    if (currentScenePage == null && scenePage != null) {
-                        currentScenePage = scenePage;
-                        scenePage.SetUpOnDefaultAsync(GetCt()).Forget();
-                    }
-                });
+            PageManagerHelper.Instance.DisposeSetUpOnDefault();
+            var scene = SceneManager.GetActiveScene();
+            var scenePage = FindScenePage(scene);
+            if (scenePage != null) {
+                currentScenePage = scenePage;
+                scenePage.SetUpOnDefaultAsync(GetCt()).Forget();
+            }
         }
 
         #endregion

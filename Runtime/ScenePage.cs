@@ -32,6 +32,7 @@ namespace com.Gamu2059.PageManagement {
 
         private CancellationToken pageManagerCt;
         private CancellationTokenSource sceneCts;
+        private bool isSetUppedOnDefault;
 
         /// <summary>
         /// ActivateAsyncからDeactivateAsyncまでのスコープで利用できるDisposable。
@@ -61,7 +62,7 @@ namespace com.Gamu2059.PageManagement {
         /// シーンのAdditiveシーンを取得する。
         /// </summary>
         public abstract string[] GetAdditiveScenes();
-        
+
         #region Transition Sequence Method
 
         /// <summary>
@@ -108,6 +109,12 @@ namespace com.Gamu2059.PageManagement {
         /// 実行時に最初から存在していた時の初期化処理。
         /// </summary>
         public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
+            // 既にデフォルトとしてセットアップしたことがあるなら、飛ばす
+            if (isSetUppedOnDefault) {
+                return;
+            }
+
+            isSetUppedOnDefault = true;
             requests = new Queue<PageRequest>();
             windows = new Stack<WindowPage>();
             isBusy = false;
@@ -525,7 +532,10 @@ namespace com.Gamu2059.PageManagement {
         #endregion
 
         private void Start() {
-            PageManagerHelper.Instance.SetUpOnDefault(this);
+            isSetUppedOnDefault = false;
+            if (PageManagerHelper.Instance.CanSetUpOnDefault) {
+                SetUpOnDefaultAsync(GetCt()).Forget();
+            }
         }
     }
 }

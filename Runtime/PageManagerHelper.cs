@@ -3,7 +3,7 @@ using UniRx;
 using UnityEngine;
 
 namespace com.Gamu2059.PageManagement {
-    public class PageManagerHelper {
+    internal class PageManagerHelper {
         private static PageManagerHelper instance;
 
         public static PageManagerHelper Instance {
@@ -16,30 +16,22 @@ namespace com.Gamu2059.PageManagement {
             }
         }
 
-        private ReactiveProperty<ScenePage> setUpOnDefaultSceneObservable;
-
-        /// <summary>
-        /// 実行時に最初から存在していたシーンがセットされた時に通知する。
-        /// </summary>
-        public IObservable<ScenePage> SetUpOnDefaultSceneObservable => setUpOnDefaultSceneObservable;
+        public bool CanSetUpOnDefault { get; private set; }
 
         private PageManagerHelper() {
             Application.quitting += Dispose;
-            setUpOnDefaultSceneObservable = new ReactiveProperty<ScenePage>();
+            CanSetUpOnDefault = true;
         }
 
         private void Dispose() {
-            setUpOnDefaultSceneObservable?.Dispose();
-            setUpOnDefaultSceneObservable = null;
-
             instance = null;
         }
 
         /// <summary>
-        /// 実行時に最初から存在していたシーンとしてセットする。
+        /// 実行時に最初から存在していたシーンのセットを出来なくする。
         /// </summary>
-        public void SetUpOnDefault(ScenePage scenePage) {
-            setUpOnDefaultSceneObservable.SetValueAndForceNotify(scenePage);
+        public void DisposeSetUpOnDefault() {
+            CanSetUpOnDefault = false;
         }
     }
 }
