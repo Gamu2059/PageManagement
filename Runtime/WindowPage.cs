@@ -56,13 +56,6 @@ namespace com.Gamu2059.PageManagement {
         #region Transition Sequence Method
 
         /// <summary>
-        /// このウィンドウに対する遷移リクエストを受け付けられるかどうかをセットする。
-        /// </summary>
-        public void SetReservableRequest(bool reservableRequest) {
-            isReservableRequest = reservableRequest;
-        }
-
-        /// <summary>
         /// シーンに紐づいたctをセットする。
         /// </summary>
         public void SetSceneCt(CancellationToken ct) {
@@ -115,6 +108,7 @@ namespace com.Gamu2059.PageManagement {
 
             CurrentScreenPage = GetComponentInChildren<ScreenPage>();
             if (CurrentScreenPage != null) {
+                CurrentScreenPage.SetWindowCt(GetCt());
                 await CurrentScreenPage.SetUpForwardInAsync(null, ct);
             }
         }
@@ -177,12 +171,16 @@ namespace com.Gamu2059.PageManagement {
             if (CurrentScreenPage != null) {
                 await CurrentScreenPage.ActivateAsync(ct);
             }
+
+            isReservableRequest = true;
         }
 
         /// <summary>
         /// ウィンドウの無効化処理。
         /// </summary>
         public async UniTask DeactivateAsync(CancellationToken ct) {
+            isReservableRequest = false;
+            
             if (CurrentScreenPage != null) {
                 await CurrentScreenPage.DeactivateAsync(ct);
             }
@@ -367,9 +365,9 @@ namespace com.Gamu2059.PageManagement {
             if (CurrentScreenPage != null) {
                 CurrentScreenPage.DeactivateObject();
                 await CurrentScreenPage.CleanUpForwardOutAsync(ct);
+                screens.Push(CurrentScreenPage);
             }
 
-            screens.Push(CurrentScreenPage);
             CurrentScreenPage = nextScreen;
         }
 

@@ -66,13 +66,6 @@ namespace com.Gamu2059.PageManagement {
         #region Transition Sequence Method
 
         /// <summary>
-        /// このシーンに対する遷移リクエストを受け付けられるかどうかをセットする。
-        /// </summary>
-        public void SetReservableRequest(bool reservableRequest) {
-            isReservableRequest = reservableRequest;
-        }
-
-        /// <summary>
         /// ページマネージャに紐づいたctをセットする。
         /// </summary>
         public void SetPageManagerCt(CancellationToken ct) {
@@ -101,29 +94,6 @@ namespace com.Gamu2059.PageManagement {
             CurrentWindowPage = Instantiate(windowPagePrefab, windowRoot);
             CurrentWindowPage.SetSceneCt(GetCt());
             await CurrentWindowPage.SetUpForwardInAsync(screenPagePrefab, windowPageParam, screenPageParam, ct);
-        }
-
-        /// <summary>
-        /// 実行時に最初から存在していた時の初期化処理。
-        /// </summary>
-        public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
-            // 既にデフォルトとしてセットアップしたことがあるなら、飛ばす
-            if (isSetUppedOnDefault) {
-                return;
-            }
-
-            isSetUppedOnDefault = true;
-            requests = new Queue<PageRequest>();
-            windows = new Stack<WindowPage>();
-            isBusy = false;
-
-            sceneCts = sceneCts.Rebuild(pageManagerCt, this.GetCancellationTokenOnDestroy());
-            await OnSetUpAsync(null, ct);
-
-            CurrentWindowPage = GetComponentInChildren<WindowPage>();
-            if (CurrentWindowPage != null) {
-                await CurrentWindowPage.SetUpOnDefaultAsync(ct);
-            }
         }
 
         /// <summary>
@@ -172,12 +142,16 @@ namespace com.Gamu2059.PageManagement {
             if (CurrentWindowPage != null) {
                 await CurrentWindowPage.ActivateAsync(ct);
             }
+
+            isReservableRequest = true;
         }
 
         /// <summary>
         /// シーンの無効化処理。
         /// </summary>
         public async UniTask DeactivateAsync(CancellationToken ct) {
+            isReservableRequest = false;
+            
             if (CurrentWindowPage != null) {
                 await CurrentWindowPage.DeactivateAsync(ct);
             }
@@ -361,11 +335,10 @@ namespace com.Gamu2059.PageManagement {
             if (CurrentWindowPage != null) {
                 CurrentWindowPage.DeactivateObject();
                 await CurrentWindowPage.CleanUpForwardOutAsync(ct);
+                windows.Push(CurrentWindowPage);
             }
 
-            windows.Push(CurrentWindowPage);
             CurrentWindowPage = nextWindow;
-            CurrentWindowPage.SetReservableRequest(true);
         }
 
         /// <summary>
@@ -526,6 +499,41 @@ namespace com.Gamu2059.PageManagement {
             if (CurrentWindowPage != null) {
                 await CurrentWindowPage.BackScreenAsync(screenPageParam);
             }
+        }
+
+        /// <summary>
+        /// 実行時に最初から存在していた時の初期化処理。
+        /// </summary>
+        public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
+            // 既にデフォルトとしてセットアップしたことがあるなら、飛ばす
+            if (isSetUppedOnDefault) {
+                return;
+            }
+
+            isSetUppedOnDefault = true;
+            requests = new Queue<PageRequest>();
+            windows = new Stack<WindowPage>();
+            isBusy = false;
+
+            sceneCts = sceneCts.Rebuild(pageManagerCt, this.GetCancellationTokenOnDestroy());
+            await ProcessSetUpOnDefaultAsync(ct);
+        }
+
+        /// <summary>
+        /// デフォルトとして初期化する時の処理。
+        /// </summary>
+        private async UniTask ProcessSetUpOnDefaultAsync(CancellationToken ct) {
+            await OnSetUpAsync(null, ct);
+
+            CurrentWindowPage = GetComponentInChildren<WindowPage>();
+            if (CurrentWindowPage != null) {
+                CurrentWindowPage.SetSceneCt(GetCt());
+                await CurrentWindowPage.SetUpOnDefaultAsync(ct);
+            }
+
+            ActivateObject();
+            await PageTransitionUtility.PlaySequenceAsync(this, null, ct);
+            await ActivateAsync(ct);
         }
 
         #endregion

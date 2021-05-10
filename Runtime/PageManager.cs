@@ -126,6 +126,7 @@ namespace com.Gamu2059.PageManagement {
             var scenePage = FindScenePage(scene);
             if (scenePage != null) {
                 CurrentScenePage = scenePage;
+                scenePage.SetPageManagerCt(GetCt());
                 scenePage.SetUpOnDefaultAsync(GetCt()).Forget();
             }
         }
@@ -239,7 +240,7 @@ namespace com.Gamu2059.PageManagement {
             await UnloadAllScenes(ct, needSceneList.ToArray());
 
             CurrentScenePage = nextScene;
-            CurrentScenePage.SetReservableRequest(true);
+            await CurrentScenePage.ActivateAsync(ct);
         }
 
         /// <summary>
