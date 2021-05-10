@@ -54,7 +54,7 @@ namespace com.Gamu2059.PageManagement {
         protected ScenePage CurrentScenePage { get; private set; }
 
         private ISwitchSceneEvent switchSceneEvent;
-        
+
         private IDisposable setUpOnDefaultDisposable;
 
         private Subject<Unit> beginSceneLoadObservable;
@@ -231,20 +231,15 @@ namespace com.Gamu2059.PageManagement {
                 await CurrentScenePage.DeactivateAsync(ct);
             }
 
-            await PageTransitionUtility.PlaySequenceAsync(null, CurrentScenePage, ct);
-
             beginSceneLoadObservable?.OnNext(Unit.Default);
-            if (switchSceneEvent != null) {
-                await switchSceneEvent.WaitShowEvent(ct);
-            }
-            
-            if (CurrentScenePage != null) {
-                CurrentScenePage.DeactivateObject();
-                await CurrentScenePage.CleanUpAsync(ct);
-            }
 
-            var loadSceneAsync = SceneManager.LoadSceneAsync(scene);
-            await loadSceneAsync.ToUniTask(null, PlayerLoopTiming.Update, ct);
+            if (switchSceneEvent == null) {
+                await CleanUpAndLoadSceneAsync(scene, ct);
+            } else {
+                await UniTask.WhenAll(
+                    CleanUpAndLoadSceneAsync(scene, ct),
+                    switchSceneEvent.WaitShowEvent(ct));
+            }
 
             // 同名のシーンの場合、読み込まれているシーンはインデックスが早いのでLastで取得する
             var loadScene = GetScenesByName(scene).Last();
@@ -264,14 +259,29 @@ namespace com.Gamu2059.PageManagement {
             nextScene.ActivateObject();
 
             completeSceneLoadObservable?.OnNext(Unit.Default);
-            if (switchSceneEvent != null) {
-                await switchSceneEvent.WaitHideEvent(ct);
+
+            if (switchSceneEvent == null) {
+                await PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct);
+            } else {
+                await UniTask.WhenAll(
+                    PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct),
+                    switchSceneEvent.WaitHideEvent(ct));
             }
-            
-            await PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct);
 
             CurrentScenePage = nextScene;
             await CurrentScenePage.ActivateAsync(ct);
+        }
+
+        private async UniTask CleanUpAndLoadSceneAsync(string scene, CancellationToken ct) {
+            await PageTransitionUtility.PlaySequenceAsync(null, CurrentScenePage, ct);
+
+            if (CurrentScenePage != null) {
+                CurrentScenePage.DeactivateObject();
+                await CurrentScenePage.CleanUpAsync(ct);
+            }
+
+            var loadSceneAsync = SceneManager.LoadSceneAsync(scene);
+            await loadSceneAsync.ToUniTask(null, PlayerLoopTiming.Update, ct);
         }
 
         /// <summary>
