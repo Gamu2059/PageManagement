@@ -105,6 +105,19 @@ namespace com.Gamu2059.PageManagement {
         }
 
         /// <summary>
+        /// 実行時に最初から存在していた時の初期化処理。
+        /// </summary>
+        public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
+            windowCts = windowCts.Rebuild(sceneCt, this.GetCancellationTokenOnDestroy());
+            await OnSetUpBackInAsync(null, ct);
+
+            CurrentScreenPage = GetComponentInChildren<ScreenPage>();
+            if (CurrentScreenPage != null) {
+                await CurrentScreenPage.SetUpForwardInAsync(null, ct);
+            }
+        }
+
+        /// <summary>
         /// ウィンドウ自体は残る時の破棄処理。
         /// </summary>
         public async UniTask CleanUpForwardOutAsync(CancellationToken ct) {

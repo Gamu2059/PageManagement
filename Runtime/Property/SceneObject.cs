@@ -18,5 +18,9 @@ namespace com.Gamu2059.PageManagement {
         public static implicit operator SceneObject(string sceneName) {
             return new SceneObject {sceneName = sceneName};
         }
+
+        public override string ToString() {
+            return sceneName;
+        }
     }
 }

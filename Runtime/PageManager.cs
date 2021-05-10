@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
 using com.Gamu2059.PageManagement.Utility;
+using UniRx;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -49,6 +50,8 @@ namespace com.Gamu2059.PageManagement {
 
         private ScenePage currentScenePage;
 
+        private IDisposable setUpOnDefaultDisposable;
+
         #region SetUp & Dispose PageManager
 
         /// <summary>
@@ -66,12 +69,13 @@ namespace com.Gamu2059.PageManagement {
         protected PageManager() {
             Application.quitting += Dispose;
 
-            SetUpPageFinder();
-
             pageManagerCts = new CancellationTokenSource();
 
             isBusy = false;
             currentScenePage = null;
+
+            SetUpPageFinder();
+            SetUpOnDefaultScene();
         }
 
         private void Dispose() {
@@ -80,6 +84,8 @@ namespace com.Gamu2059.PageManagement {
             pageManagerCts = null;
 
             pageBinder = null;
+
+            instance = null;
         }
 
         private void SetUpPageFinder() {
@@ -109,6 +115,16 @@ namespace com.Gamu2059.PageManagement {
             }
 
             return binders.FirstOrDefault(binder => binder != null);
+        }
+
+        private void SetUpOnDefaultScene() {
+            setUpOnDefaultDisposable = PageManagerHelper.Instance.SetUpOnDefaultSceneObservable
+                .Subscribe(scenePage => {
+                    if (currentScenePage == null && scenePage != null) {
+                        currentScenePage = scenePage;
+                        scenePage.SetUpOnDefaultAsync(GetCt()).Forget();
+                    }
+                });
         }
 
         #endregion

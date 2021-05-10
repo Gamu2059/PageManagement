@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
@@ -101,6 +102,23 @@ namespace com.Gamu2059.PageManagement {
             CurrentWindowPage = Instantiate(windowPagePrefab, windowRoot);
             CurrentWindowPage.SetSceneCt(GetCt());
             await CurrentWindowPage.SetUpForwardInAsync(screenPagePrefab, windowPageParam, screenPageParam, ct);
+        }
+
+        /// <summary>
+        /// 実行時に最初から存在していた時の初期化処理。
+        /// </summary>
+        public async UniTask SetUpOnDefaultAsync(CancellationToken ct) {
+            requests = new Queue<PageRequest>();
+            windows = new Stack<WindowPage>();
+            isBusy = false;
+
+            sceneCts = sceneCts.Rebuild(pageManagerCt, this.GetCancellationTokenOnDestroy());
+            await OnSetUpAsync(null, ct);
+
+            CurrentWindowPage = GetComponentInChildren<WindowPage>();
+            if (CurrentWindowPage != null) {
+                await CurrentWindowPage.SetUpOnDefaultAsync(ct);
+            }
         }
 
         /// <summary>
@@ -505,5 +523,9 @@ namespace com.Gamu2059.PageManagement {
         }
 
         #endregion
+
+        private void Start() {
+            PageManagerHelper.Instance.SetUpOnDefault(this);
+        }
     }
 }
