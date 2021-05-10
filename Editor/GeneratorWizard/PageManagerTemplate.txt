@@ -4,6 +4,6 @@ using WINDOW_NAME_SPACE;
 using SCREEN_NAME_SPACE;
 
 namespace CLASS_NAME_SPACE {
-    public class CLASS_NAME : PageManager<SCENE_TYPE, WINDOW_TYPE, SCREEN_TYPE> {
+    public class CLASS_NAME : PageManager<CLASS_NAME, SCENE_TYPE, WINDOW_TYPE, SCREEN_TYPE> {
     }
 }

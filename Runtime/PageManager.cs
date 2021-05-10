@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
 using com.Gamu2059.PageManagement.Utility;
-using UniRx;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -202,19 +201,26 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            var loadSceneAsync = LoadAdditiveSceneAsync(scene);
-            loadSceneAsync.allowSceneActivation = false;
-            await loadSceneAsync.ToUniTask(null, PlayerLoopTiming.Update, ct);
-
-            var loadScene = SceneManager.GetSceneByName(scene);
-            var nextScene = FindScenePage(loadScene);
-            if (nextScene == null) {
-                await UnloadAdditiveSceneAsync(scene);
-                return;
-            }
-
             if (CurrentScenePage != null) {
                 await CurrentScenePage.DeactivateAsync(ct);
+            }
+
+            await PageTransitionUtility.PlaySequenceAsync(null, CurrentScenePage, ct);
+
+            if (CurrentScenePage != null) {
+                CurrentScenePage.DeactivateObject();
+                await CurrentScenePage.CleanUpAsync(ct);
+            }
+
+            var loadSceneAsync = SceneManager.LoadSceneAsync(scene);
+            await loadSceneAsync.ToUniTask(null, PlayerLoopTiming.Update, ct);
+
+            // 同名のシーンの場合、読み込まれているシーンはインデックスが早いのでLastで取得する
+            var loadScene = GetScenesByName(scene).Last();
+            var nextScene = FindScenePage(loadScene);
+            if (nextScene == null) {
+                Debug.LogError("[PageManager.SwitchSceneAsync] 読み込んだシーンにScenePageが存在しません。");
+                return;
             }
 
             // シーン遷移用のctではなく、親階層のctを渡す
@@ -223,21 +229,10 @@ namespace com.Gamu2059.PageManagement {
             await nextScene.SetUpAsync(windowPagePrefab, screenPagePrefab,
                 scenePageParam, windowPageParam, screenPageParam, ct);
 
-            loadSceneAsync.allowSceneActivation = true;
             SceneManager.SetActiveScene(loadScene);
             nextScene.ActivateObject();
 
-            await PageTransitionUtility.PlaySequenceAsync(nextScene, CurrentScenePage, ct);
-
-            if (CurrentScenePage != null) {
-                CurrentScenePage.DeactivateObject();
-                await CurrentScenePage.CleanUpAsync(ct);
-            }
-
-            // 必要なシーン以外を破棄する
-            var needSceneList = new List<string> {scene};
-            needSceneList.AddRange(nextScene.GetAdditiveScenes());
-            await UnloadAllScenes(ct, needSceneList.ToArray());
+            await PageTransitionUtility.PlaySequenceAsync(nextScene, null, ct);
 
             CurrentScenePage = nextScene;
             await CurrentScenePage.ActivateAsync(ct);
@@ -339,7 +334,7 @@ namespace com.Gamu2059.PageManagement {
         }
 
         /// <summary>
-        /// スクリーンを切り替える。
+        /// スクリーンを進める。
         /// </summary>
         /// <param name="screenType">遷移先のスクリーン</param>
         /// <param name="screenPageParam">遷移先のスクリーンに渡すパラメータ</param>
@@ -407,6 +402,22 @@ namespace com.Gamu2059.PageManagement {
         #region Scene Loading Help Method
 
         /// <summary>
+        /// 現在読み込まれているシーンの中から、指定した名前に該当するものを全て取得する。
+        /// </summary>
+        private List<Scene> GetScenesByName(string name) {
+            var scenes = new List<Scene>();
+            var count = SceneManager.sceneCount;
+            for (var i = 0; i < count; i++) {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.name == name) {
+                    scenes.Add(scene);
+                }
+            }
+
+            return scenes;
+        }
+
+        /// <summary>
         /// Additiveシーンを読み込む。
         /// </summary>
         public AsyncOperation LoadAdditiveSceneAsync(string scene) {
@@ -435,36 +446,25 @@ namespace com.Gamu2059.PageManagement {
         }
 
         /// <summary>
-        /// Additiveシーンを破棄する。
+        /// シーンを破棄する。
         /// </summary>
-        public AsyncOperation UnloadAdditiveSceneAsync(string scene) {
-            var sceneData = SceneManager.GetSceneByName(scene);
-            if (!sceneData.IsValid() || !sceneData.isSubScene) {
+        public AsyncOperation UnloadSceneAsync(Scene scene) {
+            if (!scene.IsValid()) {
                 return null;
             }
 
-            return SceneManager.UnloadSceneAsync(sceneData);
+            return SceneManager.UnloadSceneAsync(scene);
         }
 
         /// <summary>
-        /// Additiveシーンを破棄する。
+        /// シーンを破棄する。
         /// </summary>
-        public AsyncOperation UnloadAdditiveSceneAsync(SceneObject scene) {
-            return UnloadAdditiveSceneAsync(scene.ToString());
-        }
+        public AsyncOperation[] UnloadScenesAsync(Scene[] scenes) {
+            if (scenes == null) {
+                return null;
+            }
 
-        /// <summary>
-        /// Additiveシーンを破棄する。
-        /// </summary>
-        public AsyncOperation[] UnloadAdditiveScenesAsync(string[] scenes) {
-            return scenes.Select(UnloadAdditiveSceneAsync).ToArray();
-        }
-
-        /// <summary>
-        /// Additiveシーンを破棄する。
-        /// </summary>
-        public AsyncOperation[] UnloadAdditiveScenesAsync(SceneObject[] scenes) {
-            return scenes.Select(UnloadAdditiveSceneAsync).ToArray();
+            return scenes.Select(UnloadSceneAsync).ToArray();
         }
 
         /// <summary>
@@ -476,7 +476,7 @@ namespace com.Gamu2059.PageManagement {
             if (needScenes != null) {
                 sceneIdxes.AddRange(needScenes
                     .Where(scene => !string.IsNullOrEmpty(scene))
-                    .Select(SceneManager.GetSceneByName)
+                    .SelectMany(GetScenesByName)
                     .Where(scene => scene.IsValid())
                     .Select(scene => scene.buildIndex));
             }

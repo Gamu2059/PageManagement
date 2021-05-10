@@ -7,7 +7,7 @@ namespace com.Gamu2059.PageManagement.Extension {
         /// CancelしてDisposeする
         /// </summary>
         public static void CancelAndDispose(this CancellationTokenSource cts) {
-            if (cts != null) {
+            if (cts != null && !cts.IsCancellationRequested) {
                 cts.Cancel();
                 cts.Dispose();
             }

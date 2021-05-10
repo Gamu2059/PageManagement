@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
@@ -8,7 +7,6 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UniRx;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace com.Gamu2059.PageManagement {
     /// <summary>
@@ -39,7 +37,15 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         protected CompositeDisposable ScopedDisposable { get; private set; }
 
+        /// <summary>
+        /// このウィンドウが遷移処理などで稼働中かどうか。
+        /// 稼働中であれば遷移リクエストはキューに積まれる。
+        /// </summary>
         private bool isBusy;
+
+        /// <summary>
+        /// このウィンドウが遷移リクエストを受け付けるかどうか。
+        /// </summary>
         private bool isReservableRequest;
 
         private Queue<PageRequest> requests;
@@ -82,14 +88,18 @@ namespace com.Gamu2059.PageManagement {
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam,
             CancellationToken ct) {
-            isReservableRequest = false;
-            
+            isReservableRequest = true;
+            isBusy = true;
+
             requests = new Queue<PageRequest>();
             windows = new Stack<WindowPage>();
-            isBusy = false;
 
             sceneCts = sceneCts.Rebuild(pageManagerCt, this.GetCancellationTokenOnDestroy());
             await OnSetUpAsync(scenePageParam, ct);
+
+            // 最初からウィンドウが存在している時は、それらを全て破棄する
+            var defaultWindows = GetComponentsInChildren<WindowPage>();
+            defaultWindows.ForEach(w => Destroy(w.gameObject));
 
             CurrentWindowPage = Instantiate(windowPagePrefab, windowRoot);
             CurrentWindowPage.SetSceneCt(GetCt());
@@ -106,7 +116,6 @@ namespace com.Gamu2059.PageManagement {
 
             await OnCleanUpAsync(ct);
             sceneCts.CancelAndDispose();
-            await SceneManager.UnloadSceneAsync(gameObject.scene).ToUniTask(cancellationToken: ct);
         }
 
         /// <summary>
@@ -139,11 +148,13 @@ namespace com.Gamu2059.PageManagement {
         public async UniTask ActivateAsync(CancellationToken ct) {
             await OnActivateAsync(ct);
 
+            await DequeueRequestWhiteEmptyAsync(ct);
+
             if (CurrentWindowPage != null) {
                 await CurrentWindowPage.ActivateAsync(ct);
             }
 
-            isReservableRequest = true;
+            isBusy = false;
         }
 
         /// <summary>
@@ -151,7 +162,7 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         public async UniTask DeactivateAsync(CancellationToken ct) {
             isReservableRequest = false;
-            
+
             if (CurrentWindowPage != null) {
                 await CurrentWindowPage.DeactivateAsync(ct);
             }
@@ -207,6 +218,10 @@ namespace com.Gamu2059.PageManagement {
         /// 表示シーケンスを生成する。
         /// </summary>
         public virtual Sequence CreateShowSequence() {
+            if (CurrentWindowPage != null) {
+                return CurrentWindowPage.CreateShowSequence();
+            }
+
             return null;
         }
 
@@ -214,6 +229,10 @@ namespace com.Gamu2059.PageManagement {
         /// 非表示シーケンスを生成する。
         /// </summary>
         public virtual Sequence CreateHideSequence() {
+            if (CurrentWindowPage != null) {
+                return CurrentWindowPage.CreateHideSequence();
+            }
+
             return null;
         }
 
@@ -237,17 +256,15 @@ namespace com.Gamu2059.PageManagement {
             ScreenPage screenPagePrefab,
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam) {
-            if (isReservableRequest) {
-                var request = new PageRequest {
-                    type = type,
-                    windowPagePrefab = windowPagePrefab,
-                    screenPagePrefab = screenPagePrefab,
-                    windowPageParam = windowPageParam,
-                    screenPageParam = screenPageParam,
-                };
+            var request = new PageRequest {
+                type = type,
+                windowPagePrefab = windowPagePrefab,
+                screenPagePrefab = screenPagePrefab,
+                windowPageParam = windowPageParam,
+                screenPageParam = screenPageParam,
+            };
 
-                requests.Enqueue(request);
-            }
+            requests.Enqueue(request);
         }
 
         /// <summary>
@@ -273,6 +290,15 @@ namespace com.Gamu2059.PageManagement {
         }
 
         /// <summary>
+        /// 遷移リクエストがキューから無くなるまで処理する。
+        /// </summary>
+        private async UniTask DequeueRequestWhiteEmptyAsync(CancellationToken ct) {
+            while (ExistRequest()) {
+                await DequeueRequestAsync(ct);
+            }
+        }
+
+        /// <summary>
         /// ウィンドウを進める。
         /// </summary>
         public async UniTask ForwardWindowAsync(
@@ -281,6 +307,12 @@ namespace com.Gamu2059.PageManagement {
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam) {
             if (windowPagePrefab == null || screenPagePrefab == null) {
+                Debug.LogError("[ScenePage.ForwardWindowAsync] WindowPagePrefabかScreenPagePrefabがnullです。");
+                return;
+            }
+
+            if (!isReservableRequest) {
+                Debug.LogWarning("[ScenePage.ForwardWindowAsync] 今は遷移リクエストを受け付けられません。");
                 return;
             }
 
@@ -293,17 +325,17 @@ namespace com.Gamu2059.PageManagement {
             isBusy = true;
 
             var cts = this.CreateCts();
+            var ct = cts.Token;
             await ProcessForwardWindowAsync(windowPagePrefab, screenPagePrefab,
-                windowPageParam, screenPageParam, cts.Token);
-            while (ExistRequest()) {
-                await DequeueRequestAsync(cts.Token);
-            }
+                windowPageParam, screenPageParam, ct);
+            await DequeueRequestWhiteEmptyAsync(ct);
 
             if (CurrentWindowPage != null) {
-                await CurrentWindowPage.ActivateAsync(cts.Token);
+                await CurrentWindowPage.ActivateAsync(ct);
             }
 
             cts.CancelAndDispose();
+
             isBusy = false;
         }
 
@@ -317,6 +349,7 @@ namespace com.Gamu2059.PageManagement {
             IScreenPageParam screenPageParam,
             CancellationToken ct) {
             if (windowPagePrefab == null || screenPagePrefab == null) {
+                Debug.LogError("[ScenePage.ForwardWindowAsync] WindowPagePrefabかScreenPagePrefabがnullです。");
                 return;
             }
 
@@ -350,6 +383,12 @@ namespace com.Gamu2059.PageManagement {
             IWindowPageParam windowPageParam,
             IScreenPageParam screenPageParam) {
             if (windowPagePrefab == null || screenPagePrefab == null) {
+                Debug.LogError("[ScenePage.SwitchWindowAsync] WindowPagePrefabかScreenPagePrefabがnullです。");
+                return;
+            }
+
+            if (!isReservableRequest) {
+                Debug.LogWarning("[ScenePage.SwitchWindowAsync] 今は遷移リクエストを受け付けられません。");
                 return;
             }
 
@@ -362,17 +401,17 @@ namespace com.Gamu2059.PageManagement {
             isBusy = true;
 
             var cts = this.CreateCts();
+            var ct = cts.Token;
             await ProcessSwitchWindowAsync(windowPagePrefab, screenPagePrefab,
-                windowPageParam, screenPageParam, cts.Token);
-            while (ExistRequest()) {
-                await DequeueRequestAsync(cts.Token);
-            }
+                windowPageParam, screenPageParam, ct);
+            await DequeueRequestWhiteEmptyAsync(ct);
 
             if (CurrentWindowPage != null) {
-                await CurrentWindowPage.ActivateAsync(cts.Token);
+                await CurrentWindowPage.ActivateAsync(ct);
             }
 
             cts.CancelAndDispose();
+
             isBusy = false;
         }
 
@@ -386,6 +425,7 @@ namespace com.Gamu2059.PageManagement {
             IScreenPageParam screenPageParam,
             CancellationToken ct) {
             if (windowPagePrefab == null || screenPagePrefab == null) {
+                Debug.LogError("[ScenePage.SwitchWindowAsync] WindowPagePrefabかScreenPagePrefabがnullです。");
                 return;
             }
 
@@ -418,6 +458,17 @@ namespace com.Gamu2059.PageManagement {
         /// ウィンドウを戻す。
         /// </summary>
         public async UniTask BackWindowAsync(IWindowPageParam windowPageParam, IScreenPageParam screenPageParam) {
+            if (!isReservableRequest) {
+                Debug.LogWarning("[ScenePage.BackWindowAsync] 今は遷移リクエストを受け付けられません。");
+                return;
+            }
+
+            // スタックにウィンドウがないなら戻れないので終了
+            if (!windows.Any()) {
+                Debug.LogWarning("[ScenePage.BackWindowAsync] スタックが空です。");
+                return;
+            }
+
             if (isBusy) {
                 EnqueueRequest(RequestType.Back, null, null, windowPageParam, screenPageParam);
                 return;
@@ -426,16 +477,16 @@ namespace com.Gamu2059.PageManagement {
             isBusy = true;
 
             var cts = this.CreateCts();
-            await ProcessBackWindowAsync(windowPageParam, screenPageParam, cts.Token);
-            while (ExistRequest()) {
-                await DequeueRequestAsync(cts.Token);
-            }
+            var ct = cts.Token;
+            await ProcessBackWindowAsync(windowPageParam, screenPageParam, ct);
+            await DequeueRequestWhiteEmptyAsync(ct);
 
             if (CurrentWindowPage != null) {
-                await CurrentWindowPage.ActivateAsync(cts.Token);
+                await CurrentWindowPage.ActivateAsync(ct);
             }
 
             cts.CancelAndDispose();
+
             isBusy = false;
         }
 
@@ -448,6 +499,7 @@ namespace com.Gamu2059.PageManagement {
             CancellationToken ct) {
             // スタックにウィンドウがないなら戻れないので終了
             if (!windows.Any()) {
+                Debug.LogWarning("[ScenePage.BackWindowAsync] スタックが空です。");
                 return;
             }
 
@@ -511,9 +563,11 @@ namespace com.Gamu2059.PageManagement {
             }
 
             isSetUppedOnDefault = true;
+            isReservableRequest = true;
+            isBusy = true;
+
             requests = new Queue<PageRequest>();
             windows = new Stack<WindowPage>();
-            isBusy = false;
 
             sceneCts = sceneCts.Rebuild(pageManagerCt, this.GetCancellationTokenOnDestroy());
             await ProcessSetUpOnDefaultAsync(ct);
@@ -539,6 +593,7 @@ namespace com.Gamu2059.PageManagement {
         #endregion
 
         private void Start() {
+            // PageManagerが存在していない時にシーンが存在している時は、PageManagerを介さずに初期化を行う
             isSetUppedOnDefault = false;
             if (PageManagerHelper.Instance.CanSetUpOnDefault) {
                 SetUpOnDefaultAsync(GetCt()).Forget();

@@ -58,7 +58,9 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         public async UniTask CleanUpForwardOutAsync(CancellationToken ct) {
             await OnCleanUpForwardOutAsync(ct);
-            screenCts.CancelAndDispose();
+            if (!screenCts.IsCancellationRequested) {
+                screenCts.CancelAndDispose();
+            }
         }
 
         /// <summary>
@@ -66,7 +68,10 @@ namespace com.Gamu2059.PageManagement {
         /// </summary>
         public async UniTask CleanUpDestroyOutAsync(CancellationToken ct) {
             await OnCleanUpDestroyOutAsync(ct);
-            screenCts.CancelAndDispose();
+            if (!screenCts.IsCancellationRequested) {
+                screenCts.CancelAndDispose();
+            }
+
             Destroy(gameObject);
         }
 
