@@ -12,7 +12,7 @@ namespace com.Gamu2059.PageManagement {
     /// <summary>
     /// ウィンドウレイヤーのページ。
     /// </summary>
-    public class WindowPage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
+    public abstract class WindowPage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
         #region Define
 
         private class PageRequest {

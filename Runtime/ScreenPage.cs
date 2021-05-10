@@ -9,7 +9,7 @@ namespace com.Gamu2059.PageManagement {
     /// <summary>
     /// スクリーンレイヤーのページ
     /// </summary>
-    public class ScreenPage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
+    public abstract class ScreenPage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
         private CancellationToken windowCt;
         private CancellationTokenSource screenCts;
 

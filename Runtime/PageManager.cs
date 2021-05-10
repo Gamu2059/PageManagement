@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using com.Gamu2059.PageManagement.Extension;
@@ -8,6 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
+
 #endif
 
 namespace com.Gamu2059.PageManagement {
@@ -180,14 +182,14 @@ namespace com.Gamu2059.PageManagement {
                 return;
             }
 
-            var loadSceneAsync = SceneManager.LoadSceneAsync(scene, LoadSceneMode.Additive);
+            var loadSceneAsync = LoadAdditiveSceneAsync(scene);
             loadSceneAsync.allowSceneActivation = false;
             await loadSceneAsync.ToUniTask(null, PlayerLoopTiming.Update, ct);
 
             var loadScene = SceneManager.GetSceneByName(scene);
             var nextScene = FindScenePage(loadScene);
             if (nextScene == null) {
-                await SceneManager.UnloadSceneAsync(loadScene);
+                await UnloadAdditiveSceneAsync(scene);
                 return;
             }
 
@@ -211,6 +213,11 @@ namespace com.Gamu2059.PageManagement {
                 currentScenePage.DeactivateObject();
                 await currentScenePage.CleanUpAsync(ct);
             }
+
+            // 必要なシーン以外を破棄する
+            var needSceneList = new List<string> {scene};
+            needSceneList.AddRange(nextScene.GetAdditiveScenes());
+            await UnloadAllScenes(ct, needSceneList.ToArray());
 
             currentScenePage = nextScene;
         }
@@ -372,6 +379,100 @@ namespace com.Gamu2059.PageManagement {
             if (currentScenePage != null) {
                 await currentScenePage.BackScreenAsync(screenPageParam);
             }
+        }
+
+        #endregion
+
+        #region Scene Loading Help Method
+
+        /// <summary>
+        /// Additiveシーンを読み込む。
+        /// </summary>
+        public AsyncOperation LoadAdditiveSceneAsync(string scene) {
+            return SceneManager.LoadSceneAsync(scene, LoadSceneMode.Additive);
+        }
+
+        /// <summary>
+        /// Additiveシーンを読み込む。
+        /// </summary>
+        public AsyncOperation LoadAdditiveSceneAsync(SceneObject scene) {
+            return LoadAdditiveSceneAsync(scene.ToString());
+        }
+
+        /// <summary>
+        /// Additiveシーンを読み込む。
+        /// </summary>
+        public AsyncOperation[] LoadAdditiveScenesAsync(string[] scenes) {
+            return scenes.Select(LoadAdditiveSceneAsync).ToArray();
+        }
+
+        /// <summary>
+        /// Additiveシーンを読み込む。
+        /// </summary>
+        public AsyncOperation[] LoadAdditiveScenesAsync(SceneObject[] scenes) {
+            return scenes.Select(LoadAdditiveSceneAsync).ToArray();
+        }
+
+        /// <summary>
+        /// Additiveシーンを破棄する。
+        /// </summary>
+        public AsyncOperation UnloadAdditiveSceneAsync(string scene) {
+            var sceneData = SceneManager.GetSceneByName(scene);
+            if (!sceneData.IsValid() || !sceneData.isSubScene) {
+                return null;
+            }
+
+            return SceneManager.UnloadSceneAsync(sceneData);
+        }
+
+        /// <summary>
+        /// Additiveシーンを破棄する。
+        /// </summary>
+        public AsyncOperation UnloadAdditiveSceneAsync(SceneObject scene) {
+            return UnloadAdditiveSceneAsync(scene.ToString());
+        }
+
+        /// <summary>
+        /// Additiveシーンを破棄する。
+        /// </summary>
+        public AsyncOperation[] UnloadAdditiveScenesAsync(string[] scenes) {
+            return scenes.Select(UnloadAdditiveSceneAsync).ToArray();
+        }
+
+        /// <summary>
+        /// Additiveシーンを破棄する。
+        /// </summary>
+        public AsyncOperation[] UnloadAdditiveScenesAsync(SceneObject[] scenes) {
+            return scenes.Select(UnloadAdditiveSceneAsync).ToArray();
+        }
+
+        /// <summary>
+        /// 指定したシーン以外の全てのシーンを破棄する。
+        /// </summary>
+        /// <param name="needScenes">破棄しないでほしいシーン名</param>
+        public async UniTask UnloadAllScenes(CancellationToken ct, params string[] needScenes) {
+            var sceneIdxes = new List<int>();
+            if (needScenes != null) {
+                sceneIdxes.AddRange(needScenes
+                    .Where(scene => !string.IsNullOrEmpty(scene))
+                    .Select(SceneManager.GetSceneByName)
+                    .Where(scene => scene.IsValid())
+                    .Select(scene => scene.buildIndex));
+            }
+
+            var unloadScenes = new List<Scene>();
+            for (var i = 0; i < SceneManager.sceneCount; i++) {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!sceneIdxes.Contains(scene.buildIndex)) {
+                    unloadScenes.Add(scene);
+                }
+            }
+
+            await UniTask.WhenAll(
+                unloadScenes
+                    .Select(SceneManager.UnloadSceneAsync)
+                    .Select(o => o.ToUniTask(cancellationToken: ct))
+            );
         }
 
         #endregion

@@ -13,7 +13,7 @@ namespace com.Gamu2059.PageManagement {
     /// <summary>
     /// シーンレイヤーのページ。
     /// </summary>
-    public class ScenePage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
+    public abstract class ScenePage : MonoBehaviour, ICancellationTokenCreatable, ISequenceCreatable {
         #region Define
 
         private class PageRequest {
@@ -56,6 +56,11 @@ namespace com.Gamu2059.PageManagement {
             return sceneCts?.Token ?? this.GetCancellationTokenOnDestroy();
         }
 
+        /// <summary>
+        /// シーンのAdditiveシーンを取得する。
+        /// </summary>
+        public abstract string[] GetAdditiveScenes();
+        
         #region Transition Sequence Method
 
         /// <summary>
