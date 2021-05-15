@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace com.Gamu2059.PageManagement.Editor.Property {
     [Serializable]
-    public class TypeObject {
+    internal class TypeObject {
         [SerializeField]
         private string nameSpace;
 

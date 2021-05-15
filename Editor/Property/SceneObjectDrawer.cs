@@ -8,7 +8,7 @@ namespace com.Gamu2059.PageManagement.Editor.Property {
     /// https://gist.github.com/Hertzole/ac269f3148bc5192cc2eb6d472870d24
     /// </summary>
     [CustomPropertyDrawer(typeof(SceneObject))]
-    public class SceneObjectDrawer : PropertyDrawer {
+    internal class SceneObjectDrawer : PropertyDrawer {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             var sceneNameProp = property.FindPropertyRelative("sceneName");
 

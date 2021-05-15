@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace com.Gamu2059.PageManagement.Editor.Property {
     [CustomPropertyDrawer(typeof(WindowPagePrefab))]
-    public class WindowPagePrefabDrawer : PropertyDrawer {
+    internal class WindowPagePrefabDrawer : PropertyDrawer {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             var prefabs = GetWindowPrefabs();
             var options = prefabs.Select(s => $"{s.Item1.name} - \"{s.Item2.Replace("/", "\\")}\"")

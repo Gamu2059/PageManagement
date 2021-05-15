@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 
 namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
-    public class GeneratorWizard : ScriptableWizard {
+    internal class GeneratorWizard : ScriptableWizard {
         [SerializeField]
         [PageType(PageType.Scene)]
         private TypeObject scene;

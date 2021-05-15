@@ -2,7 +2,7 @@
 using UnityEngine;
 
 namespace com.Gamu2059.PageManagement.Editor.GeneratorWizard {
-    public class NamePathData {
+    internal class NamePathData {
         public string NameSpace { get; private set; }
         public string Name { get; private set; }
         public string Path { get; private set; }

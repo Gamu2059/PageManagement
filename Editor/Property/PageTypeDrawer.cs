@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace com.Gamu2059.PageManagement.Editor.Property {
     [CustomPropertyDrawer(typeof(PageTypeAttribute))]
-    public class PageTypeDrawer : PropertyDrawer {
+    internal class PageTypeDrawer : PropertyDrawer {
         private Type[] cachedCandidateType;
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
