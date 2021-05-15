@@ -64,11 +64,6 @@ namespace com.Gamu2059.PageManagement {
             return sceneCts?.Token ?? this.GetCancellationTokenOnDestroy();
         }
 
-        /// <summary>
-        /// シーンのAdditiveシーンを取得する。
-        /// </summary>
-        public abstract string[] GetAdditiveScenes();
-
         #region Transition Sequence Method
 
         /// <summary>

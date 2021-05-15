@@ -14,7 +14,7 @@ using UnityEditor;
 #endif
 
 namespace com.Gamu2059.PageManagement {
-    public class PageManager<T, TScene, TWindow, TScreen> : ICancellationTokenCreatable
+    public abstract class PageManager<T, TScene, TWindow, TScreen> : ICancellationTokenCreatable
         where T : PageManager<T, TScene, TWindow, TScreen>, new()
         where TScene : Enum
         where TWindow : Enum
